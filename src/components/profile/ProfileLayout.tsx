@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import { getUserById, getAllUsers } from "../../api/users.api";
 import { getPostsByUser } from "../../api/posts.api";
+import  useAuth  from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 export default function ProfileLayout() {
-  const userId = 1; // después viene de params (react-router)
+  const { user: authUser, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const userId = authUser?._id;
 
   const [user, setUser] = useState<any>(null);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -13,51 +18,66 @@ export default function ProfileLayout() {
   /* ---------------- FETCH DATA ---------------- */
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const [userData, usersData, postsData] = await Promise.all([
-        getUserById(userId),
-        getAllUsers(),
-        getPostsByUser(userId),
-      ]);
+    const fetchData = async () => {
+      try {
+        if (!userId) return;
 
-      console.log("USER DATA:", userData);
-      console.log("ALL USERS:", usersData);
-      console.log("POSTS DATA:", postsData);
+        const [userData, usersData, postsData] = await Promise.all([
+          getUserById(userId),
+          getAllUsers(),
+          getPostsByUser(userId),
+        ]);
 
-      setUser(userData);
-      setAllUsers(usersData);
-      setPosts(postsData);
-    } catch (error) {
-      console.error("ERROR CARGANDO PERFIL:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!userData) {
+          logout();
+          navigate("/login");
+          return;
+        }
 
-  fetchData();
-}, [userId]);
+        setUser(userData);
+        setAllUsers(usersData);
+        setPosts(postsData);
+      } catch (err) {
+        console.error("ERROR CARGANDO PERFIL:", err);
+
+        logout();
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
 
   /* ---------------- MUTUAL FRIENDS ---------------- */
 
   const getFriends = () => {
     if (!user) return [];
 
-    const following = new Set(user.seguidosIds || []);
-    const followers = new Set(user.seguidoresIds || []);
+    const following = new Set(user.siguiendo || []);
+    const followers = new Set(user.seguidores || []);
 
     return allUsers.filter(
       (u) =>
-        u.id !== user.id &&
-        following.has(u.id) &&
-        followers.has(u.id)
+        u._id !== user._id &&
+        following.has(u._id) &&
+        followers.has(u._id)
     );
   };
 
   if (loading) {
     return (
       <div style={{ color: "white", padding: 40 }}>
-        Loading profile...
+        Cargando perfil...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ color: "white", padding: 40 }}>
+        Usuario no encontrado
       </div>
     );
   }
@@ -75,7 +95,7 @@ export default function ProfileLayout() {
     >
       <div
         style={{
-          maxWidth: 700,
+          maxWidth: 800,
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",
@@ -84,35 +104,51 @@ export default function ProfileLayout() {
       >
         {/* ---------------- HEADER ---------------- */}
 
-        <div style={{ display: "flex", gap: 20 }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
           <img
-            src={user.fotoPerfil}
+            src={user.fotoPerfil || "https://via.placeholder.com/150"}
             style={{
               width: 150,
               height: 150,
               borderRadius: 20,
+              objectFit: "cover",
             }}
           />
 
           <div>
             <div style={{ fontSize: 12, color: "#888" }}>USER</div>
-            <h1>{user.usuario}</h1>
+            <h1 style={{ margin: 0 }}>{user.usuario}</h1>
           </div>
         </div>
 
-        {/* ---------------- DESCRIPTION ---------------- */}
+        {/* ---------------- STATS ---------------- */}
 
-        <div style={card}>{user.descripcion}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <div style={card}>
+            <div style={{ fontSize: 12, color: "#888" }}>Seguidores</div>
+            <div>{user.seguidores?.length || 0}</div>
+          </div>
+
+          <div style={card}>
+            <div style={{ fontSize: 12, color: "#888" }}>Seguidos</div>
+            <div>{user.siguiendo?.length || 0}</div>
+          </div>
+
+          <div style={card}>
+            <div style={{ fontSize: 12, color: "#888" }}>Amistades</div>
+            <div>{friends.length}</div>
+          </div>
+        </div>
 
         {/* ---------------- FRIENDS ---------------- */}
 
-        <div style={{ color: "#888" }}>Amistades</div>
+        <div style={{ color: "#888" }}>Amistades mutuas</div>
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {friends.map((f) => (
-            <div key={f.id} style={friendCard}>
+            <div key={f._id} style={friendCard}>
               <img
-                src={f.fotoPerfil}
+                src={f.fotoPerfil || "https://via.placeholder.com/60"}
                 style={{
                   width: 60,
                   height: 60,
@@ -124,16 +160,25 @@ export default function ProfileLayout() {
           ))}
         </div>
 
+        {/* ---------------- DESCRIPTION ---------------- */}
+
+        <div style={card}>
+          {user.descripcion || "Sin descripción"}
+        </div>
+
         {/* ---------------- POSTS ---------------- */}
 
         <div style={{ color: "#888" }}>Posts</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {posts.map((p) => (
-            <div key={p.id} style={postCard}>
-              <div style={{ fontWeight: "bold" }}>{p.title}</div>
+            <div key={p._id} style={postCard}>
+              <div style={{ fontWeight: "bold" }}>
+                {p.titulo || "Post"}
+              </div>
+
               <div style={{ color: "#aaa", fontSize: 13 }}>
-                {p.description}
+                {p.descripcion}
               </div>
             </div>
           ))}
@@ -146,9 +191,10 @@ export default function ProfileLayout() {
 /* ---------------- STYLES ---------------- */
 
 const card = {
-  background: "#222",
+  background: "#1f1f1f",
   padding: 12,
   borderRadius: 14,
+  flex: 1,
 };
 
 const friendCard = {
@@ -158,6 +204,7 @@ const friendCard = {
   display: "flex",
   flexDirection: "column" as const,
   alignItems: "center",
+  width: 80,
 };
 
 const postCard = {

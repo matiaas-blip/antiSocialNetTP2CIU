@@ -1,6 +1,13 @@
 import { NavLink } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
 
 export default function Navbar() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+  
   const linkStyle = ({ isActive }: { isActive: boolean }) => ({
     padding: "12px 20px",
     borderRadius: "16px",
@@ -46,10 +53,6 @@ export default function Navbar() {
 
       <NavLink to="/profile" style={linkStyle}>
         Perfil
-      </NavLink>
-
-      <NavLink to="/login" style={linkStyle}>
-        Login
       </NavLink>
     </nav>
   );
