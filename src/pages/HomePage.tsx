@@ -17,24 +17,57 @@ export default function HomePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (pageNumber: number) => {
     try {
-      setLoading(true);
+      if (loadingMore) return;
 
-      const res = await api.get("/posts");
+      setLoadingMore(true);
 
-      setPosts(res.data);
+      const res = await api.get(
+        `/posts?page=${pageNumber}&limit=10`
+      );
+
+      const newPosts = res.data;
+
+      if (newPosts.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setPosts((prev) => [...prev, ...newPosts]);
+      setPage(pageNumber);
     } catch (err: any) {
       setError("Error al cargar posts");
     } finally {
+      setLoadingMore(false);
       setLoading(false);
     }
   };
 
+
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const height = document.body.offsetHeight;
+      const windowHeight = window.innerHeight;
+
+      const nearBottom =
+        scrollY + windowHeight >= height - 200;
+
+      if (nearBottom && !loadingMore && hasMore) {
+        fetchPosts(page + 1);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () =>
+      window.removeEventListener("scroll", handleScroll);
+  }, [page, loadingMore, hasMore]);
 
   if (loading) return <p>Cargando posts...</p>;
   if (error) return <p>{error}</p>;

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { getUserById, getAllUsers } from "../../api/users.api";
 import { getPostsByUser } from "../../api/posts.api";
-import  useAuth  from "../../hooks/useAuth";
+import useAuth from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
+import songIcon from "../../assets/icons/song.svg";
 
 export default function ProfileLayout() {
   const { user: authUser, logout } = useAuth();
@@ -15,12 +17,23 @@ export default function ProfileLayout() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* ---------------- FETCH DATA ---------------- */
+  const [editing, setEditing] = useState(false);
+
+  const [editData, setEditData] = useState({
+    descripcion: "",
+    fotoPerfil: "",
+    canciones: [] as string[],
+  });
+
+  /* ---------------- FETCH ---------------- */
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (!userId) return;
+        if (!userId) {
+          navigate("/login");
+          return;
+        }
 
         const [userData, usersData, postsData] = await Promise.all([
           getUserById(userId),
@@ -28,18 +41,16 @@ export default function ProfileLayout() {
           getPostsByUser(userId),
         ]);
 
-        if (!userData) {
-          logout();
-          navigate("/login");
-          return;
-        }
-
         setUser(userData);
         setAllUsers(usersData);
         setPosts(postsData);
-      } catch (err) {
-        console.error("ERROR CARGANDO PERFIL:", err);
 
+        setEditData({
+          descripcion: userData.descripcion || "",
+          fotoPerfil: userData.fotoPerfil || "",
+          canciones: userData.canciones || [],
+        });
+      } catch (err) {
         logout();
         navigate("/login");
       } finally {
@@ -50,9 +61,9 @@ export default function ProfileLayout() {
     fetchData();
   }, [userId]);
 
-  /* ---------------- MUTUAL FRIENDS ---------------- */
+  /* ---------------- MUTUALS ---------------- */
 
-  const getFriends = () => {
+  const getMutuals = () => {
     if (!user) return [];
 
     const following = new Set(user.siguiendo || []);
@@ -66,122 +77,181 @@ export default function ProfileLayout() {
     );
   };
 
-  if (loading) {
-    return (
-      <div style={{ color: "white", padding: 40 }}>
-        Cargando perfil...
-      </div>
-    );
+  /* ---------------- SAVE ---------------- */
+
+  const saveProfile = async () => {
+    setUser((prev: any) => ({
+      ...prev,
+      descripcion: editData.descripcion,
+      fotoPerfil: editData.fotoPerfil,
+      canciones: editData.canciones,
+    }));
+
+    setEditing(false);
+
+    await api.put(`/users/${user._id}/profile`, {
+      descripcion: editData.descripcion,
+      fotoPerfil: editData.fotoPerfil,
+      canciones: editData.canciones,
+    });
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  if (loading || !user) {
+    return <div style={{ color: "white", padding: 40 }}>Cargando perfil...</div>;
   }
 
-  if (!user) {
-    return (
-      <div style={{ color: "white", padding: 40 }}>
-        Usuario no encontrado
-      </div>
-    );
-  }
-
-  const friends = getFriends();
+  const mutuals = getMutuals();
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0f0f0f",
-        paddingTop: 80,
-        color: "white",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 800,
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 15,
-        }}
-      >
-        {/* ---------------- HEADER ---------------- */}
-
-        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+    <div style={page}>
+      <div style={container}>
+        {/* HEADER */}
+        <div style={header}>
           <img
             src={user.fotoPerfil || "https://via.placeholder.com/150"}
-            style={{
-              width: 150,
-              height: 150,
-              borderRadius: 20,
-              objectFit: "cover",
-            }}
+            style={avatar}
           />
 
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: "#888" }}>USER</div>
             <h1 style={{ margin: 0 }}>{user.usuario}</h1>
-          </div>
-        </div>
 
-        {/* ---------------- STATS ---------------- */}
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <div style={card}>
-            <div style={{ fontSize: 12, color: "#888" }}>Seguidores</div>
-            <div>{user.seguidores?.length || 0}</div>
-          </div>
-
-          <div style={card}>
-            <div style={{ fontSize: 12, color: "#888" }}>Seguidos</div>
-            <div>{user.siguiendo?.length || 0}</div>
-          </div>
-
-          <div style={card}>
-            <div style={{ fontSize: 12, color: "#888" }}>Amistades</div>
-            <div>{friends.length}</div>
-          </div>
-        </div>
-
-        {/* ---------------- FRIENDS ---------------- */}
-
-        <div style={{ color: "#888" }}>Amistades mutuas</div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          {friends.map((f) => (
-            <div key={f._id} style={friendCard}>
-              <img
-                src={f.fotoPerfil || "https://via.placeholder.com/60"}
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: "50%",
-                }}
-              />
-              <div style={{ fontSize: 12 }}>{f.usuario}</div>
+            <div style={stats}>
+              <div>Seguidores: {user.seguidores?.length || 0}</div>
+              <div>Seguidos: {user.siguiendo?.length || 0}</div>
+              <div>Mutuals: {mutuals.length}</div>
             </div>
-          ))}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button onClick={() => setEditing(!editing)} style={btn}>
+              Editar perfil
+            </button>
+
+            <button onClick={handleLogout} style={{ ...btn, background: "#3a1f1f" }}>
+              Cerrar sesión
+            </button>
+          </div>
         </div>
 
-        {/* ---------------- DESCRIPTION ---------------- */}
+        {/* EDIT */}
+        {editing && (
+          <div style={card}>
+            <h3>Editar perfil</h3>
 
-        <div style={card}>
-          {user.descripcion || "Sin descripción"}
-        </div>
+            <input
+              style={input}
+              placeholder="Foto URL"
+              value={editData.fotoPerfil}
+              onChange={(e) =>
+                setEditData({ ...editData, fotoPerfil: e.target.value })
+              }
+            />
 
-        {/* ---------------- POSTS ---------------- */}
+            <textarea
+              style={{ ...input, height: 80 }}
+              placeholder="Descripción"
+              value={editData.descripcion}
+              onChange={(e) =>
+                setEditData({ ...editData, descripcion: e.target.value })
+              }
+            />
 
-        <div style={{ color: "#888" }}>Posts</div>
+            <button onClick={saveProfile} style={btn}>
+              Guardar cambios
+            </button>
+          </div>
+        )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {posts.map((p) => (
-            <div key={p._id} style={postCard}>
-              <div style={{ fontWeight: "bold" }}>
-                {p.titulo || "Post"}
+        {/* SPLIT */}
+        <div style={split}>
+          <div style={card}>
+            <h3>Descripción</h3>
+            <p>{user.descripcion || "Sin descripción"}</p>
+          </div>
+
+          {/* 🎵 CANCIONES EDITABLES */}
+          <div style={card}>
+            <h3>Canciones</h3>
+
+            {editData.canciones.map((song: string, index: number) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginBottom: 8,
+                  alignItems: "center",
+                }}
+              >
+                <img
+                  src={songIcon}
+                  alt="song"
+                  style={{ width: 16, height: 16 }}
+                />
+
+                <input
+                  value={song}
+                  onChange={(e) => {
+                    const updated = [...editData.canciones];
+                    updated[index] = e.target.value;
+
+                    setEditData({
+                      ...editData,
+                      canciones: updated,
+                    });
+                  }}
+                  style={input}
+                />
+
+                <button
+                  onClick={() => {
+                    const updated = editData.canciones.filter(
+                      (_, i) => i !== index
+                    );
+
+                    setEditData({
+                      ...editData,
+                      canciones: updated,
+                    });
+                  }}
+                  style={btn}
+                >
+                  X
+                </button>
               </div>
+            ))}
 
-              <div style={{ color: "#aaa", fontSize: 13 }}>
+            <button
+              onClick={() =>
+                setEditData({
+                  ...editData,
+                  canciones: [...editData.canciones, ""],
+                })
+              }
+              style={btn}
+            >
+              + Agregar canción
+            </button>
+          </div>
+        </div>
+
+        {/* POSTS */}
+        <div style={card}>
+          <h3>Posts</h3>
+
+          <div style={grid}>
+            {posts.map((p) => (
+              <div key={p._id} style={post}>
                 {p.descripcion}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -190,25 +260,88 @@ export default function ProfileLayout() {
 
 /* ---------------- STYLES ---------------- */
 
+const page = {
+  minHeight: "100vh",
+  background: "#0f0f0f",
+  paddingTop: 80,
+  color: "white",
+};
+
+const container = {
+  maxWidth: 1000,
+  margin: "0 auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: 15,
+};
+
+const header = {
+  display: "flex",
+  gap: 20,
+  alignItems: "center",
+  background: "#1f1f1f",
+  padding: 20,
+  borderRadius: 16,
+};
+
+const avatar = {
+  width: 120,
+  height: 120,
+  borderRadius: 18,
+  objectFit: "cover",
+};
+
+const stats = {
+  display: "flex",
+  gap: 15,
+  marginTop: 10,
+  fontSize: 13,
+  color: "#aaa",
+};
+
+const split = {
+  display: "flex",
+  gap: 15,
+};
+
 const card = {
   background: "#1f1f1f",
-  padding: 12,
+  padding: 15,
   borderRadius: 14,
   flex: 1,
 };
 
-const friendCard = {
-  background: "#1b1b1b",
-  padding: 10,
-  borderRadius: 14,
-  display: "flex",
-  flexDirection: "column" as const,
-  alignItems: "center",
-  width: 80,
+const btn = {
+  background: "#2a2a2a",
+  color: "white",
+  border: "none",
+  padding: "8px 12px",
+  borderRadius: 10,
+  cursor: "pointer",
 };
 
-const postCard = {
-  background: "#1f1f1f",
-  padding: 12,
-  borderRadius: 14,
+const input = {
+  width: "100%",
+  padding: 10,
+  background: "#222",
+  border: "none",
+  color: "white",
+  borderRadius: 10,
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, 1fr)",
+  gap: 10,
+};
+
+const post = {
+  aspectRatio: "1/1",
+  background: "#222",
+  borderRadius: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 10,
+  textAlign: "center",
 };

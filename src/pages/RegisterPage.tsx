@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/register.api";
-import  useAuth from "../hooks/useAuth";
+import useAuth from "../hooks/useAuth";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -14,20 +12,17 @@ export default function RegisterPage() {
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try 
-      {const user = await registerUser({
+    try {
+      const user = await registerUser({
         usuario,
         email,
         clave,
       });
 
       login(user);
-
       navigate("/");
     } catch (err: any) {
       const message = err?.response?.data?.error;
@@ -37,7 +32,7 @@ export default function RegisterPage() {
         return;
       }
 
-      if (message.includes("duplicate key")) {
+      if (message.includes("duplicate")) {
         if (message.includes("usuario")) {
           setError("El nombre de usuario ya está en uso");
         } else if (message.includes("email")) {
@@ -50,6 +45,7 @@ export default function RegisterPage() {
 
       setError(message);
     }
+  };
 
   return (
     <div
@@ -74,21 +70,13 @@ export default function RegisterPage() {
           gap: 15,
         }}
       >
-        <h1
-          style={{
-            margin: 0,
-          }}
-        >
-          Registro
-        </h1>
+        <h1>Registro</h1>
 
         <input
           type="text"
           placeholder="Usuario"
           value={usuario}
-          onChange={(e) =>
-            setUsuario(e.target.value)
-          }
+          onChange={(e) => setUsuario(e.target.value)}
           style={inputStyle}
         />
 
@@ -96,9 +84,7 @@ export default function RegisterPage() {
           type="email"
           placeholder="Email"
           value={email}
-          onChange={(e) =>
-            setEmail(e.target.value)
-          }
+          onChange={(e) => setEmail(e.target.value)}
           style={inputStyle}
         />
 
@@ -106,19 +92,12 @@ export default function RegisterPage() {
           type="password"
           placeholder="Contraseña"
           value={clave}
-          onChange={(e) =>
-            setClave(e.target.value)
-          }
+          onChange={(e) => setClave(e.target.value)}
           style={inputStyle}
         />
 
         {error && (
-          <div
-            style={{
-              color: "#ff6b6b",
-              fontSize: 14,
-            }}
-          >
+          <div style={{ color: "#ff6b6b", fontSize: 14 }}>
             {error}
           </div>
         )}
@@ -136,7 +115,7 @@ export default function RegisterPage() {
         >
           Registrarse
         </button>
-        
+
         <Link
           to="/login"
           style={{
@@ -144,19 +123,16 @@ export default function RegisterPage() {
             textAlign: "center",
             background: "#222",
             color: "white",
-            padding: "12px",
-            borderRadius: "14px",
+            padding: 12,
+            borderRadius: 14,
             display: "block",
-            marginTop: "10px",
           }}
         >
           Iniciar sesión
         </Link>
-
       </form>
     </div>
   );
-}
 }
 
 const inputStyle = {

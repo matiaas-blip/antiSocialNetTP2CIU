@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { loginUser } from "../api/auth.api";
-import  useAuth  from "../hooks/useAuth";
+import useAuth from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function LoginPage() {
-  const [usuario, setUsuario] = useState("");
+  const [email, setEmail] = useState("");
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
 
@@ -16,13 +16,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const user = await loginUser(usuario, clave);
+      const user = await loginUser(email, clave);
 
-      login(user); // 🔥 guarda sesión real
-
-      navigate("/"); // redirige al home
+      login(user);
+      navigate("/");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Error al iniciar sesión");
+      setError(err?.response?.data?.error || "Error al iniciar sesión");
     }
   };
 
@@ -32,14 +31,14 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit}>
         <input
-          placeholder="Usuario"
-          value={usuario}
-          onChange={(e) => setUsuario(e.target.value)}
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
           type="password"
-          placeholder="Clave"
+          placeholder="Contraseña"
           value={clave}
           onChange={(e) => setClave(e.target.value)}
         />
@@ -49,9 +48,7 @@ export default function LoginPage() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <Link to="/register" style={{ color: "lightblue" }}>
-        Crear cuenta
-      </Link>
+      <Link to="/register">Crear cuenta</Link>
     </div>
   );
 }
