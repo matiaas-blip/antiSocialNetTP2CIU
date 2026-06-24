@@ -4,7 +4,10 @@ import { getPostsByUser } from "../../api/posts.api";
 import useAuth from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
+
 import songIcon from "../../assets/icons/song.svg";
+
+const PROFILE_STORAGE_KEY = "antisocial_profile_data";
 
 export default function ProfileLayout() {
   const { user: authUser, logout } = useAuth();
@@ -13,6 +16,8 @@ export default function ProfileLayout() {
   const userId = authUser?._id;
 
   const [user, setUser] = useState<any>(null);
+  const [finalUser, setFinalUser] = useState<any>(null);
+
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +29,17 @@ export default function ProfileLayout() {
     fotoPerfil: "",
     canciones: [] as string[],
   });
+
+  /* ---------------- LOCAL STORAGE ---------------- */
+
+  const saveToLocal = (data: any) => {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
+  };
+
+  const loadFromLocal = () => {
+    const data = localStorage.getItem(PROFILE_STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  };
 
   /* ---------------- FETCH ---------------- */
 
@@ -43,13 +59,25 @@ export default function ProfileLayout() {
 
         setUser(userData);
         setAllUsers(usersData);
-        setPosts(postsData);
+
+        const local = loadFromLocal();
+
+        const mergedUser = {
+          ...userData,
+          descripcion: local?.descripcion ?? userData.descripcion ?? "",
+          fotoPerfil: local?.fotoPerfil ?? userData.fotoPerfil ?? "",
+          canciones: local?.canciones ?? userData.canciones ?? [],
+        };
+
+        setFinalUser(mergedUser);
 
         setEditData({
-          descripcion: userData.descripcion || "",
-          fotoPerfil: userData.fotoPerfil || "",
-          canciones: userData.canciones || [],
+          descripcion: mergedUser.descripcion,
+          fotoPerfil: mergedUser.fotoPerfil,
+          canciones: mergedUser.canciones,
         });
+
+        setPosts(local?.posts ?? postsData ?? []);
       } catch (err) {
         logout();
         navigate("/login");
@@ -64,32 +92,41 @@ export default function ProfileLayout() {
   /* ---------------- MUTUALS ---------------- */
 
   const getMutuals = () => {
-    if (!user) return [];
+    if (!finalUser) return [];
 
-    const following = new Set(user.siguiendo || []);
-    const followers = new Set(user.seguidores || []);
+    const following = new Set(finalUser.siguiendo || []);
+    const followers = new Set(finalUser.seguidores || []);
 
     return allUsers.filter(
       (u) =>
-        u._id !== user._id &&
+        u._id !== finalUser._id &&
         following.has(u._id) &&
         followers.has(u._id)
     );
   };
 
-  /* ---------------- SAVE ---------------- */
+  /* ---------------- SAVE PROFILE ---------------- */
 
   const saveProfile = async () => {
-    setUser((prev: any) => ({
-      ...prev,
+    const updatedUser = {
+      ...finalUser,
       descripcion: editData.descripcion,
       fotoPerfil: editData.fotoPerfil,
       canciones: editData.canciones,
-    }));
+    };
 
+    setFinalUser(updatedUser);
+    setUser(updatedUser);
     setEditing(false);
 
-    await api.put(`/users/${user._id}/profile`, {
+    saveToLocal({
+      descripcion: editData.descripcion,
+      fotoPerfil: editData.fotoPerfil,
+      canciones: editData.canciones,
+      posts,
+    });
+
+    await api.put(`/users/${userId}/profile`, {
       descripcion: editData.descripcion,
       fotoPerfil: editData.fotoPerfil,
       canciones: editData.canciones,
@@ -101,7 +138,7 @@ export default function ProfileLayout() {
     navigate("/login");
   };
 
-  if (loading || !user) {
+  if (loading || !finalUser) {
     return <div style={{ color: "white", padding: 40 }}>Cargando perfil...</div>;
   }
 
@@ -113,17 +150,17 @@ export default function ProfileLayout() {
         {/* HEADER */}
         <div style={header}>
           <img
-            src={user.fotoPerfil || "https://via.placeholder.com/150"}
+            src={finalUser.fotoPerfil || "https://via.placeholder.com/150"}
             style={avatar}
           />
 
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: "#888" }}>USER</div>
-            <h1 style={{ margin: 0 }}>{user.usuario}</h1>
+            <h1 style={{ margin: 0 }}>{finalUser.usuario}</h1>
 
             <div style={stats}>
-              <div>Seguidores: {user.seguidores?.length || 0}</div>
-              <div>Seguidos: {user.siguiendo?.length || 0}</div>
+              <div>Seguidores: {finalUser.seguidores?.length || 0}</div>
+              <div>Seguidos: {finalUser.siguiendo?.length || 0}</div>
               <div>Mutuals: {mutuals.length}</div>
             </div>
           </div>
@@ -168,14 +205,13 @@ export default function ProfileLayout() {
           </div>
         )}
 
-        {/* SPLIT */}
+        {/* CONTENT */}
         <div style={split}>
           <div style={card}>
             <h3>Descripción</h3>
-            <p>{user.descripcion || "Sin descripción"}</p>
+            <p>{finalUser.descripcion || "Sin descripción"}</p>
           </div>
 
-          {/* 🎵 CANCIONES EDITABLES */}
           <div style={card}>
             <h3>Canciones</h3>
 
@@ -189,22 +225,14 @@ export default function ProfileLayout() {
                   alignItems: "center",
                 }}
               >
-                <img
-                  src={songIcon}
-                  alt="song"
-                  style={{ width: 16, height: 16 }}
-                />
+                <img src={songIcon} style={{ width: 16, height: 16 }} />
 
                 <input
                   value={song}
                   onChange={(e) => {
                     const updated = [...editData.canciones];
                     updated[index] = e.target.value;
-
-                    setEditData({
-                      ...editData,
-                      canciones: updated,
-                    });
+                    setEditData({ ...editData, canciones: updated });
                   }}
                   style={input}
                 />
@@ -214,11 +242,7 @@ export default function ProfileLayout() {
                     const updated = editData.canciones.filter(
                       (_, i) => i !== index
                     );
-
-                    setEditData({
-                      ...editData,
-                      canciones: updated,
-                    });
+                    setEditData({ ...editData, canciones: updated });
                   }}
                   style={btn}
                 >
@@ -246,8 +270,8 @@ export default function ProfileLayout() {
           <h3>Posts</h3>
 
           <div style={grid}>
-            {posts.map((p) => (
-              <div key={p._id} style={post}>
+            {posts.map((p: any) => (
+              <div key={p._id || p.descripcion} style={post}>
                 {p.descripcion}
               </div>
             ))}

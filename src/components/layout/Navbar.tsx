@@ -7,7 +7,7 @@ export default function Navbar() {
   if (!user) {
     return null;
   }
-  
+
   const linkStyle = ({ isActive }: { isActive: boolean }) => ({
     padding: "12px 20px",
     borderRadius: "16px",
@@ -47,7 +47,7 @@ export default function Navbar() {
         Home
       </NavLink>
 
-      <NavLink to="/create" style={linkStyle}>
+      <NavLink to="/create-post" style={linkStyle}>
         Publicar
       </NavLink>
 
