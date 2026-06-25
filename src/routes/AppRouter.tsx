@@ -6,6 +6,7 @@ import RegisterPage from "../pages/RegisterPage";
 import HomePage from "../pages/HomePage";
 import ProfilePage from "../pages/ProfilePage";
 import CreatePostPage from "../pages/CreatePostPage";
+import PostDetailPage from "../pages/PostDetailPage";
 
 export default function AppRouter() {
   const { user, loading } = useAuth();
@@ -26,6 +27,7 @@ export default function AppRouter() {
           <Route path="/" element={<HomePage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/create-post" element={<CreatePostPage />} />
+          <Route path="/post/:id" element={<PostDetailPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </>
       )}
