@@ -6,9 +6,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
 import songIcon from "../assets/icons/song.svg";
 
-/* =========================
-   STORAGE (POR USUARIO)
-========================= */
 
 const PROFILE_STORAGE_KEY = (userId: string) =>
   `antisocial_profile_${userId}`;
@@ -26,9 +23,6 @@ const profileStorage = {
     ),
 };
 
-/* =========================
-   HOOK MOBILE (igual idea tuya)
-========================= */
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -45,9 +39,6 @@ function useIsMobile() {
   return isMobile;
 }
 
-/* =========================
-   COMPONENTE
-========================= */
 
 export default function ProfileLayout() {
   const { user: authUser, logout } = useAuth();
@@ -71,20 +62,12 @@ export default function ProfileLayout() {
     canciones: [] as string[],
   });
 
-  /* =========================
-     HELPERS
-  ========================= */
-
   const updateField = (field: string, value: any) => {
     setEditData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
-
-  /* =========================
-     EFFECT
-  ========================= */
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,7 +85,6 @@ export default function ProfileLayout() {
 
         const local = profileStorage.get(userId);
 
-        // 🔥 MERGE SEGURO (NO rompe login)
         const merged = {
           ...userData,
           descripcion: local?.descripcion ?? userData.descripcion ?? "",
@@ -132,9 +114,6 @@ export default function ProfileLayout() {
     fetchData();
   }, [userId, location.key]);
 
-  /* =========================
-     SAVE PROFILE
-  ========================= */
 
   const saveProfile = async () => {
     const updated = {
@@ -155,9 +134,6 @@ export default function ProfileLayout() {
     navigate("/login");
   };
 
-  /* =========================
-     ESTILOS (TU MISMO DISEÑO)
-  ========================= */
 
   const container = {
     width: "100%",
@@ -314,9 +290,6 @@ export default function ProfileLayout() {
     fontWeight: "bold",
   };
 
-  /* =========================
-     LOADING
-  ========================= */
 
   if (loading || !finalUser) {
     return (
@@ -326,9 +299,6 @@ export default function ProfileLayout() {
     );
   }
 
-  /* =========================
-     RENDER (MISMA ESTÉTICA)
-  ========================= */
 
   return (
     <div
@@ -369,7 +339,6 @@ export default function ProfileLayout() {
           </div>
         </div>
 
-        {/* EDITOR */}
         {editing && (
           <div style={card}>
             <label style={labelStyle}>Avatar</label>
@@ -447,7 +416,6 @@ export default function ProfileLayout() {
           </div>
         )}
 
-        {/* INFO */}
         <div style={split}>
           <div style={card}>
             <h3>Descripción</h3>

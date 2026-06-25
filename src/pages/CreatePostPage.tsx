@@ -48,7 +48,6 @@ export default function CreatePostPage() {
         <h2 style={styles.title}>Crear publicación</h2>
 
         <form onSubmit={handleSubmit} style={styles.form}>
-          {/* TEXTO */}
           <label style={styles.label}>¿Qué estás pensando?</label>
           <textarea
             value={descripcion}
@@ -57,7 +56,6 @@ export default function CreatePostPage() {
             style={styles.textarea}
           />
 
-          {/* IMAGEN */}
           <label style={styles.label}>Imagen (opcional)</label>
           <input
             value={image}
@@ -66,7 +64,6 @@ export default function CreatePostPage() {
             style={styles.input}
           />
 
-          {/* PREVIEW */}
           {image && (
             <img
               src={image}
@@ -78,10 +75,8 @@ export default function CreatePostPage() {
             />
           )}
 
-          {/* ERROR */}
           {error && <p style={styles.error}>{error}</p>}
 
-          {/* BUTTON */}
           <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "Publicando..." : "Publicar"}
           </button>
@@ -90,8 +85,6 @@ export default function CreatePostPage() {
     </PageWrapper>
   );
 }
-
-/* ================= STYLES ================= */
 
 const styles: any = {
   container: {

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { getPosts } from "../api/posts.api";
-import { createComment } from "../api/comments.api";
 import useAuth from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { PageWrapper } from "../components/PageWrapper";
@@ -63,7 +62,6 @@ export default function HomePage() {
         {posts.map((post) => (
           <div key={post._id} style={styles.card}>
 
-            {/* CONTENIDO CLICKABLE */}
             <div
               onClick={() => navigate(`/post/${post._id}`)}
               style={{ cursor: "pointer" }}
@@ -77,7 +75,6 @@ export default function HomePage() {
               <p>{post.descripcion}</p>
             </div>
 
-            {/* COMMENTS */}
             <div>
               {(post.comments || []).map((c: any, i: number) => (
                 <div key={i} style={styles.comment}>
@@ -85,7 +82,6 @@ export default function HomePage() {
                 </div>
               ))}
 
-              {/* INPUT (NO ABRE DETAIL) */}
               <div
                 style={styles.commentBox}
                 onClick={(e) => e.stopPropagation()}
@@ -115,7 +111,6 @@ export default function HomePage() {
   );
 }
 
-/* ================= STYLES ================= */
 
 const styles: any = {
   feed: {

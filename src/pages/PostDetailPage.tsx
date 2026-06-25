@@ -14,7 +14,7 @@ export default function PostDetailPage() {
   const [openMenu, setOpenMenu] = useState(false);
   const [commentText, setCommentText] = useState("");
 
-  // POST
+
   useEffect(() => {
     const fetchPost = async () => {
       try {
@@ -28,7 +28,7 @@ export default function PostDetailPage() {
     fetchPost();
   }, [id]);
 
-  // COMMENTS
+
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -42,7 +42,7 @@ export default function PostDetailPage() {
     if (id) fetchComments();
   }, [id]);
 
-  // DELETE POST
+
   const deletePost = async () => {
     try {
       await api.delete(`/posts/${id}`);
@@ -52,7 +52,7 @@ export default function PostDetailPage() {
     }
   };
 
-  // CREATE COMMENT
+
   const handleComment = async () => {
     if (!commentText?.trim()) return;
 
@@ -79,7 +79,7 @@ export default function PostDetailPage() {
     <div style={styles.page}>
       <div style={styles.card}>
 
-        {/* MENU */}
+
         <div style={styles.menu}>
           <img
             src={puntosIcon}
@@ -96,12 +96,11 @@ export default function PostDetailPage() {
           )}
         </div>
 
-        {/* IMAGE */}
+
         {post.images?.[0] && (
           <img src={post.images[0]} style={styles.image} />
         )}
 
-        {/* CONTENT */}
         <div style={styles.content}>
           <h2 style={styles.title}>{post.descripcion}</h2>
 
@@ -119,7 +118,7 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* COMMENTS */}
+
           <div style={styles.commentsWrapper}>
 
             <div style={styles.commentsTitle}>
@@ -137,10 +136,8 @@ export default function PostDetailPage() {
               ))}
             </div>
 
-            {/* FOOTER INPUT */}
-            <div style={styles.commentInputBox}>
 
-              {/* VOLVER */}
+            <div style={styles.commentInputBox}>
               <button
                 onClick={() => navigate(-1)}
                 style={styles.backBtn}
@@ -148,7 +145,6 @@ export default function PostDetailPage() {
                 Volver
               </button>
 
-              {/* INPUT */}
               <input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
@@ -156,7 +152,6 @@ export default function PostDetailPage() {
                 style={styles.input}
               />
 
-              {/* COMENTAR */}
               <button
                 onClick={handleComment}
                 style={styles.btn}
@@ -174,7 +169,6 @@ export default function PostDetailPage() {
   );
 }
 
-/* ================= STYLES ================= */
 
 const styles: any = {
   page: {
@@ -301,7 +295,6 @@ const styles: any = {
     borderBottom: "1px solid #2a2a2a",
   },
 
-  /* FOOTER BAR */
   commentInputBox: {
     display: "flex",
     alignItems: "center",

@@ -18,7 +18,6 @@ export default function LoginPage() {
     try {
       const data = await loginUser(email, password);
 
-      // backend devuelve { user, token }
       login(data);
 
       navigate("/");
