@@ -1,7 +1,9 @@
-export function PageWrapper({ children }: any) {
+import  ReactNode  from "react";
+
+export function PageWrapper({ children }: { children: ReactNode }) {
   return (
     <div style={styles.page}>
-      <div style={styles.container}>{children}</div>
+      <main style={styles.container}>{children}</main>
     </div>
   );
 }
@@ -9,18 +11,13 @@ export function PageWrapper({ children }: any) {
 const styles: any = {
   page: {
     minHeight: "100vh",
-    background: "radial-gradient(circle at top, #1a1a1a, #0a0a0a)",
-    display: "flex",
-    justifyContent: "center",
-    padding: "20px 20px 20px 220px", 
+    background: "#0f0f0f",
     color: "white",
   },
 
   container: {
-    width: "100%",
-    maxWidth: 900,
-    display: "flex",
-    flexDirection: "column",
-    gap: 18,
+    padding: 20,
+    maxWidth: 1000,
+    margin: "0 auto",
   },
 };

@@ -9,7 +9,7 @@ export default function RegisterPage() {
 
   const [usuario, setUsuario] = useState("");
   const [email, setEmail] = useState("");
-  const [clave, setClave] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,7 +19,7 @@ export default function RegisterPage() {
       const user = await registerUser({
         usuario,
         email,
-        clave,
+        password,
       });
 
       login(user);
@@ -91,8 +91,8 @@ export default function RegisterPage() {
         <input
           type="password"
           placeholder="Contraseña"
-          value={clave}
-          onChange={(e) => setClave(e.target.value)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           style={inputStyle}
         />
 

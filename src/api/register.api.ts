@@ -3,10 +3,10 @@ import api from "./axios";
 type RegisterData = {
   usuario: string;
   email: string;
-  clave: string;
+  password: string;
 };
 
 export const registerUser = async (data: RegisterData) => {
-  const res = await api.post("/users", data);
+  const res = await api.post("/auth/register", data);
   return res.data;
 };

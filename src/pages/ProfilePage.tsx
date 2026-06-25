@@ -1,26 +1,53 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getUserById, getAllUsers } from "../api/users.api";
 import { getPostsByUser } from "../api/posts.api";
 import useAuth from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
-
 import songIcon from "../assets/icons/song.svg";
 
-const PROFILE_STORAGE_KEY = "antisocial_profile_data";
+/* =========================
+   STORAGE (POR USUARIO)
+========================= */
+
+const PROFILE_STORAGE_KEY = (userId: string) =>
+  `antisocial_profile_${userId}`;
+
+const profileStorage = {
+  get: (userId: string) =>
+    JSON.parse(
+      localStorage.getItem(PROFILE_STORAGE_KEY(userId)) || "null"
+    ),
+
+  set: (userId: string, data: any) =>
+    localStorage.setItem(
+      PROFILE_STORAGE_KEY(userId),
+      JSON.stringify(data)
+    ),
+};
+
+/* =========================
+   HOOK MOBILE (igual idea tuya)
+========================= */
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () =>
+      setIsMobile(window.innerWidth < 768);
+
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () =>
+      window.removeEventListener("resize", handleResize);
   }, []);
 
   return isMobile;
 }
 
+/* =========================
+   COMPONENTE
+========================= */
 
 export default function ProfileLayout() {
   const { user: authUser, logout } = useAuth();
@@ -44,16 +71,20 @@ export default function ProfileLayout() {
     canciones: [] as string[],
   });
 
+  /* =========================
+     HELPERS
+  ========================= */
 
-  const saveToLocal = (data: any) => {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
+  const updateField = (field: string, value: any) => {
+    setEditData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
-  const loadFromLocal = () => {
-    const data = localStorage.getItem(PROFILE_STORAGE_KEY);
-    return data ? JSON.parse(data) : null;
-  };
-
+  /* =========================
+     EFFECT
+  ========================= */
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,8 +100,9 @@ export default function ProfileLayout() {
           getPostsByUser(userId),
         ]);
 
-        const local = loadFromLocal();
+        const local = profileStorage.get(userId);
 
+        // 🔥 MERGE SEGURO (NO rompe login)
         const merged = {
           ...userData,
           descripcion: local?.descripcion ?? userData.descripcion ?? "",
@@ -100,6 +132,9 @@ export default function ProfileLayout() {
     fetchData();
   }, [userId, location.key]);
 
+  /* =========================
+     SAVE PROFILE
+  ========================= */
 
   const saveProfile = async () => {
     const updated = {
@@ -110,7 +145,7 @@ export default function ProfileLayout() {
     setFinalUser(updated);
     setEditing(false);
 
-    saveToLocal(updated);
+    profileStorage.set(userId, updated);
 
     await api.put(`/users/${userId}/profile`, editData);
   };
@@ -120,9 +155,9 @@ export default function ProfileLayout() {
     navigate("/login");
   };
 
-  if (loading || !finalUser) {
-    return <div style={{ color: "white", padding: 40 }}>Cargando perfil...</div>;
-  }
+  /* =========================
+     ESTILOS (TU MISMO DISEÑO)
+  ========================= */
 
   const container = {
     width: "100%",
@@ -233,12 +268,6 @@ export default function ProfileLayout() {
     resize: "vertical",
   };
 
-  const inputRow = {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  };
-
   const songRow = {
     display: "flex",
     alignItems: "center",
@@ -285,6 +314,21 @@ export default function ProfileLayout() {
     fontWeight: "bold",
   };
 
+  /* =========================
+     LOADING
+  ========================= */
+
+  if (loading || !finalUser) {
+    return (
+      <div style={{ color: "white", padding: 40 }}>
+        Cargando perfil...
+      </div>
+    );
+  }
+
+  /* =========================
+     RENDER (MISMA ESTÉTICA)
+  ========================= */
 
   return (
     <div
@@ -303,7 +347,7 @@ export default function ProfileLayout() {
       }}
     >
       <div style={container}>
-
+        {/* HEADER */}
         <div style={header}>
           <img
             src={finalUser.fotoPerfil || "https://via.placeholder.com/150"}
@@ -325,140 +369,85 @@ export default function ProfileLayout() {
           </div>
         </div>
 
+        {/* EDITOR */}
         {editing && (
-          <div
-            style={{
-              marginTop: 15,
-              padding: 0,
-              borderRadius: 18,
-              overflow: "hidden",
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "linear-gradient(145deg, #1a1a1a, #111)",
-              boxShadow: "0 10px 40px rgba(0,0,0,0.6)",
-            }}
-          >
-            {/* HEADER DEL PANEL */}
-            <div
-              style={{
-                padding: 15,
-                background: "rgba(255,255,255,0.03)",
-                borderBottom: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              <h3 style={{ margin: 0, color: "white", letterSpacing: 1 }}>
-                ✦ Editar identidad
-              </h3>
-              <p style={{ margin: 0, fontSize: 12, color: "#888" }}>
-                Personalizá cómo te ven los demás
-              </p>
-            </div>
+          <div style={card}>
+            <label style={labelStyle}>Avatar</label>
+            <input
+              style={editInput}
+              value={editData.fotoPerfil}
+              onChange={(e) =>
+                updateField("fotoPerfil", e.target.value)
+              }
+            />
 
-            {/* CONTENIDO */}
-            <div
-              style={{
-                padding: 18,
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
-              }}
-            >
+            <label style={labelStyle}>Fondo</label>
+            <input
+              style={editInput}
+              value={editData.fondoPerfil}
+              onChange={(e) =>
+                updateField("fondoPerfil", e.target.value)
+              }
+            />
 
-              {/* FOTO PERFIL */}
-              <div>
-                <label style={labelStyle}>Avatar</label>
-                <div style={inputRow}>
-                  <input
-                    style={editInput}
-                    placeholder="URL de imagen de perfil"
-                    value={editData.fotoPerfil}
-                    onChange={(e) =>
-                      setEditData({ ...editData, fotoPerfil: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
+            <label style={labelStyle}>Bio</label>
+            <textarea
+              style={textarea}
+              value={editData.descripcion}
+              onChange={(e) =>
+                updateField("descripcion", e.target.value)
+              }
+            />
 
-              {/* FONDO */}
-              <div>
-                <label style={labelStyle}>Fondo / Header</label>
+            <label style={labelStyle}>Canciones</label>
+
+            {editData.canciones.map((song, i) => (
+              <div key={i} style={songRow}>
+                <span>♪</span>
+
                 <input
-                  style={editInput}
-                  placeholder="URL de imagen de fondo"
-                  value={editData.fondoPerfil}
-                  onChange={(e) =>
-                    setEditData({ ...editData, fondoPerfil: e.target.value })
-                  }
+                  style={songInput}
+                  value={song}
+                  onChange={(e) => {
+                    const copy = [...editData.canciones];
+                    copy[i] = e.target.value;
+                    updateField("canciones", copy);
+                  }}
                 />
-              </div>
-
-              {/* DESCRIPCIÓN */}
-              <div>
-                <label style={labelStyle}>Bio</label>
-                <textarea
-                  style={textarea}
-                  placeholder="Escribí algo que te represente..."
-                  value={editData.descripcion}
-                  onChange={(e) =>
-                    setEditData({ ...editData, descripcion: e.target.value })
-                  }
-                />
-              </div>
-
-              {/* CANCIONES */}
-              <div>
-                <label style={labelStyle}>Canciones destacadas</label>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {editData.canciones.map((song, i) => (
-                    <div key={i} style={songRow}>
-                      <span style={{ color: "#666" }}>♪</span>
-
-                      <input
-                        style={songInput}
-                        value={song}
-                        placeholder="Nombre o link"
-                        onChange={(e) => {
-                          const copy = [...editData.canciones];
-                          copy[i] = e.target.value;
-                          setEditData({ ...editData, canciones: copy });
-                        }}
-                      />
-
-                      <button
-                        onClick={() => {
-                          const copy = editData.canciones.filter((_, idx) => idx !== i);
-                          setEditData({ ...editData, canciones: copy });
-                        }}
-                        style={deleteBtn}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
 
                 <button
-                  onClick={() =>
-                    setEditData({
-                      ...editData,
-                      canciones: [...editData.canciones, ""],
-                    })
-                  }
-                  style={addBtn}
+                  style={deleteBtn}
+                  onClick={() => {
+                    const copy = editData.canciones.filter(
+                      (_, idx) => idx !== i
+                    );
+                    updateField("canciones", copy);
+                  }}
                 >
-                  + Agregar canción
+                  ✕
                 </button>
               </div>
+            ))}
 
-              {/* GUARDAR */}
-              <button onClick={saveProfile} style={saveBtn}>
-                Guardar cambios
-              </button>
-            </div>
+            <button
+              style={addBtn}
+              onClick={() =>
+                updateField("canciones", [
+                  ...editData.canciones,
+                  "",
+                ])
+              }
+            >
+              + Agregar canción
+            </button>
+
+            <button style={saveBtn} onClick={saveProfile}>
+              Guardar cambios
+            </button>
           </div>
         )}
 
-
+        {/* INFO */}
         <div style={split}>
           <div style={card}>
             <h3>Descripción</h3>
@@ -477,7 +466,7 @@ export default function ProfileLayout() {
           </div>
         </div>
 
-
+        {/* POSTS */}
         <div style={card}>
           <h3>Posts</h3>
 
@@ -495,8 +484,6 @@ export default function ProfileLayout() {
                       width: "100%",
                       height: "50%",
                       objectFit: "cover",
-                      borderTopLeftRadius: 10,
-                      borderTopRightRadius: 10,
                     }}
                   />
                 )}

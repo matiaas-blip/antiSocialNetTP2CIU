@@ -1,4 +1,4 @@
-import  ReactNode  from "react";
+import type { ReactNode } from "react";
 
 /* =========================
    PAGE WRAPPER
@@ -36,20 +36,16 @@ export function GlassCard({
    GLASS BUTTON
 ========================= */
 
-export function GlassButton({
-  children,
-  onClick,
-  danger,
-}: {
-  children: ReactNode;
-  onClick?: () => void;
-  danger?: boolean;
-}) {
+export function GlassButton({ children, onClick, danger }: any) {
   return (
     <button
       onClick={onClick}
       style={{
-        ...styles.button,
+        border: "1px solid rgba(255,255,255,0.1)",
+        padding: "10px 14px",
+        borderRadius: 12,
+        cursor: "pointer",
+        backdropFilter: "blur(10px)",
         background: danger
           ? "rgba(255,80,80,0.15)"
           : "rgba(255,255,255,0.06)",
@@ -61,22 +57,42 @@ export function GlassButton({
   );
 }
 
-export function Sidebar({ navigate }: any) {
+export function Sidebar({ navigate, user, logout }: any) {
   return (
-    <div style={sidebarStyles.container}>
-      <h2 style={{ margin: 0 }}>AntiSocial</h2>
+    <div style={styles.container}>
+      {/* PERFIL */}
+      <div style={styles.profileBox}>
+        <img
+          src={user?.fotoPerfil || "https://via.placeholder.com/80"}
+          style={styles.avatar}
+        />
 
-      <button style={sidebarStyles.btn} onClick={() => navigate("/")}>
-        🏠 Feed
-      </button>
+        <div>
+          <div style={styles.name}>{user?.usuario || "Usuario"}</div>
+          <div style={styles.tag}>@{user?.usuario || "user"}</div>
+        </div>
+      </div>
 
-      <button style={sidebarStyles.btn} onClick={() => navigate("/create")}>
-        ✍️ Crear post
-      </button>
+      {/* NAV */}
+      <div style={styles.nav}>
 
-      <button style={sidebarStyles.btn} onClick={() => navigate("/profile")}>
-        👤 Perfil
-      </button>
+        <button style={styles.btn} onClick={() => navigate("/profile")}>
+          👤 Mi perfil
+        </button>
+      </div>
+
+      {/* LOGOUT abajo */}
+      <div style={styles.logoutBox}>
+        <button
+          style={styles.logout}
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
+        >
+          🚪 Cerrar sesión
+        </button>
+      </div>
     </div>
   );
 }

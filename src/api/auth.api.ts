@@ -2,11 +2,11 @@ import api from "./axios";
 
 export const loginUser = async (
   email: string,
-  clave: string
+  password: string
 ) => {
   const res = await api.post("/auth/login", {
     email,
-    clave,
+    password,
   });
 
   return res.data;

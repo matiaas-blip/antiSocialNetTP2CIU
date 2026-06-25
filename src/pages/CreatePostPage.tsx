@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import { createPost } from "../api/posts.api";
-import PageWrapper from "../components/PageWrapper";
+import { PageWrapper } from "../components/PageWrapper";
 
 export default function CreatePostPage() {
   const { user } = useAuth();
@@ -26,7 +26,7 @@ export default function CreatePostPage() {
       setError("");
 
       await createPost({
-        usuario: user?._id, // 🔥 IMPORTANTE: usar el usuario real
+        usuario: user?._id,
         descripcion,
         images: image ? [image] : [],
       });
@@ -34,9 +34,8 @@ export default function CreatePostPage() {
       setDescripcion("");
       setImage("");
 
-      navigate("/"); // vuelve al feed
-    } catch (err: any) {
-      console.log(err);
+      navigate("/");
+    } catch (err) {
       setError("Error al crear el post");
     } finally {
       setLoading(false);
@@ -45,26 +44,26 @@ export default function CreatePostPage() {
 
   return (
     <PageWrapper>
-      <div style={container}>
-        <h2 style={title}>Crear publicación</h2>
+      <div style={styles.container}>
+        <h2 style={styles.title}>Crear publicación</h2>
 
-        <form onSubmit={handleSubmit} style={form}>
-          {/* DESCRIPCIÓN */}
-          <label style={label}>¿Qué estás pensando?</label>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {/* TEXTO */}
+          <label style={styles.label}>¿Qué estás pensando?</label>
           <textarea
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
             placeholder="Escribí algo..."
-            style={textarea}
+            style={styles.textarea}
           />
 
           {/* IMAGEN */}
-          <label style={label}>Imagen (opcional)</label>
+          <label style={styles.label}>Imagen (opcional)</label>
           <input
             value={image}
             onChange={(e) => setImage(e.target.value)}
             placeholder="URL de imagen"
-            style={input}
+            style={styles.input}
           />
 
           {/* PREVIEW */}
@@ -72,7 +71,7 @@ export default function CreatePostPage() {
             <img
               src={image}
               alt="preview"
-              style={preview}
+              style={styles.preview}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
@@ -80,10 +79,10 @@ export default function CreatePostPage() {
           )}
 
           {/* ERROR */}
-          {error && <p style={errorText}>{error}</p>}
+          {error && <p style={styles.error}>{error}</p>}
 
-          {/* BOTÓN */}
-          <button type="submit" disabled={loading} style={button}>
+          {/* BUTTON */}
+          <button type="submit" disabled={loading} style={styles.button}>
             {loading ? "Publicando..." : "Publicar"}
           </button>
         </form>
@@ -92,72 +91,75 @@ export default function CreatePostPage() {
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* ================= STYLES ================= */
 
-const container = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 15,
-};
+const styles: any = {
+  container: {
+    maxWidth: 600,
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+  },
 
-const title = {
-  margin: 0,
-  fontSize: 22,
-};
+  title: {
+    margin: 0,
+    fontSize: 22,
+  },
 
-const form = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 12,
-};
+  form: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
 
-const label = {
-  fontSize: 12,
-  color: "#aaa",
-};
+  label: {
+    fontSize: 12,
+    color: "#888",
+  },
 
-const textarea = {
-  width: "100%",
-  minHeight: 120,
-  padding: 12,
-  borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "#151515",
-  color: "white",
-  outline: "none",
-  resize: "none",
-};
+  textarea: {
+    width: "100%",
+    minHeight: 140,
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #2a2a2a",
+    background: "#151515",
+    color: "white",
+    resize: "none",
+    outline: "none",
+  },
 
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 12,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "#151515",
-  color: "white",
-  outline: "none",
-};
+  input: {
+    width: "100%",
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #2a2a2a",
+    background: "#151515",
+    color: "white",
+    outline: "none",
+  },
 
-const preview = {
-  width: "100%",
-  maxHeight: 300,
-  objectFit: "cover" as const,
-  borderRadius: 12,
-  marginTop: 5,
-};
+  preview: {
+    width: "100%",
+    maxHeight: 280,
+    objectFit: "cover",
+    borderRadius: 10,
+  },
 
-const errorText = {
-  color: "#ff6b6b",
-  fontSize: 12,
-};
+  error: {
+    color: "#ff6b6b",
+    fontSize: 12,
+  },
 
-const button = {
-  marginTop: 10,
-  padding: 12,
-  borderRadius: 12,
-  border: "none",
-  background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
-  color: "white",
-  fontWeight: "bold",
-  cursor: "pointer",
+  button: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #2a2a2a",
+    background: "#1f1f1f",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
 };
