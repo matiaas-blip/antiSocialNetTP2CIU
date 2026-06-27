@@ -1,56 +1,24 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { getUserById, getAllUsers } from "../api/users.api";
 import { getPostsByUser } from "../api/posts.api";
+import { profileStorage } from "../utils/profileStorage";
 import useAuth from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "../api/axios";
-import songIcon from "../assets/icons/song.svg";
-
-
-const PROFILE_STORAGE_KEY = (userId: string) =>
-  `antisocial_profile_${userId}`;
-
-const profileStorage = {
-  get: (userId: string) =>
-    JSON.parse(
-      localStorage.getItem(PROFILE_STORAGE_KEY(userId)) || "null"
-    ),
-
-  set: (userId: string, data: any) =>
-    localStorage.setItem(
-      PROFILE_STORAGE_KEY(userId),
-      JSON.stringify(data)
-    ),
-};
-
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () =>
-      setIsMobile(window.innerWidth < 768);
-
-    window.addEventListener("resize", handleResize);
-    return () =>
-      window.removeEventListener("resize", handleResize);
-  }, []);
-
-  return isMobile;
-}
-
+import defaultAvatar from "../assets/images/defaultAvatar.jpg";
+import { useTheme } from "../context/ThemeContext";
 
 export default function ProfileLayout() {
-  const { user: authUser, logout } = useAuth();
+  const { user: authUser, logout, updateUser } = useAuth();
+  const { theme,setThemeFromUser } = useTheme();
+  const themeColor = theme?.primary || "#8b5cf6";
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isMobile = useIsMobile();
 
   const userId = authUser?._id;
 
   const [finalUser, setFinalUser] = useState<any>(null);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [, setAllUsers] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -60,6 +28,9 @@ export default function ProfileLayout() {
     fotoPerfil: "",
     fondoPerfil: "",
     canciones: [] as string[],
+    theme: {
+      primary: "#8b5cf6",
+    }
   });
 
   const updateField = (field: string, value: any) => {
@@ -83,15 +54,7 @@ export default function ProfileLayout() {
           getPostsByUser(userId),
         ]);
 
-        const local = profileStorage.get(userId);
-
-        const merged = {
-          ...userData,
-          descripcion: local?.descripcion ?? userData.descripcion ?? "",
-          fotoPerfil: local?.fotoPerfil ?? userData.fotoPerfil ?? "",
-          fondoPerfil: local?.fondoPerfil ?? userData.fondoPerfil ?? "",
-          canciones: local?.canciones ?? userData.canciones ?? [],
-        };
+        const merged = profileStorage.merge(userId, userData);
 
         setFinalUser(merged);
         setAllUsers(usersData);
@@ -102,6 +65,7 @@ export default function ProfileLayout() {
           fotoPerfil: merged.fotoPerfil,
           fondoPerfil: merged.fondoPerfil,
           canciones: merged.canciones,
+          theme: merged.theme || { primary: "#8b5cf6" },
         });
       } catch (err) {
         logout();
@@ -125,6 +89,9 @@ export default function ProfileLayout() {
     setEditing(false);
 
     profileStorage.set(userId, updated);
+    updateUser(updated);
+
+    setThemeFromUser(updated.theme || { primary: "#8b5cf6" });
 
     await api.put(`/users/${userId}/profile`, editData);
   };
@@ -132,164 +99,7 @@ export default function ProfileLayout() {
   const handleLogout = () => {
     logout();
     navigate("/login");
-  };
-
-
-  const container = {
-    width: "100%",
-    maxWidth: "1100px",
-    background: "rgba(15,15,15,0.92)",
-    borderRadius: "24px",
-    padding: isMobile ? 15 : 30,
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-  };
-
-  const header = {
-    display: "flex",
-    flexDirection: isMobile ? "column" : "row",
-    gap: 20,
-    alignItems: "center",
-    textAlign: isMobile ? "center" : "left",
-    background: "#1f1f1f",
-    padding: 20,
-    borderRadius: 16,
-  };
-
-  const avatar = {
-    width: isMobile ? 90 : 120,
-    height: isMobile ? 90 : 120,
-    borderRadius: 18,
-    objectFit: "cover",
-  };
-
-  const split = {
-    display: "flex",
-    flexDirection: isMobile ? "column" : "row",
-    gap: 15,
-  };
-
-  const card = {
-    background: "#1f1f1f",
-    padding: 15,
-    borderRadius: 14,
-    flex: 1,
-    color: "#bdbdbd",
-  };
-
-  const btn = {
-    background: "#555",
-    color: "white",
-    border: "none",
-    padding: "8px 12px",
-    borderRadius: 10,
-    cursor: "pointer",
-    width: isMobile ? "100%" : "auto",
-  };
-
-  const input = {
-    width: "100%",
-    padding: 10,
-    background: "#424242",
-    border: "none",
-    color: "white",
-    borderRadius: 10,
-  };
-
-  const grid = {
-    display: "grid",
-    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
-    gap: 10,
-  };
-
-  const post = {
-    aspectRatio: "1/1",
-    background: "#2b2b2b",
-    borderRadius: 12,
-    overflow: "hidden",
-    display: "flex",
-    flexDirection: "column",
-    cursor: "pointer",
-    transition: "0.2s",
-  };
-
-  const labelStyle = {
-    fontSize: 12,
-    color: "#888",
-    marginBottom: 6,
-    display: "block",
-    letterSpacing: 0.5,
-  };
-
-  const editInput = {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "#151515",
-    color: "white",
-    outline: "none",
-  };
-
-  const textarea = {
-    width: "100%",
-    minHeight: 90,
-    padding: "10px 12px",
-    borderRadius: 10,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "#151515",
-    color: "white",
-    outline: "none",
-    resize: "vertical",
-  };
-
-  const songRow = {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "6px 10px",
-    borderRadius: 10,
-    background: "#141414",
-    border: "1px solid rgba(255,255,255,0.05)",
-  };
-
-  const songInput = {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    color: "white",
-    outline: "none",
-  };
-
-  const deleteBtn = {
-    background: "transparent",
-    border: "none",
-    color: "#999",
-    cursor: "pointer",
-  };
-
-  const addBtn = {
-    marginTop: 10,
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    color: "white",
-    padding: "10px",
-    borderRadius: 12,
-    cursor: "pointer",
-  };
-
-  const saveBtn = {
-    marginTop: 10,
-    background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
-    border: "none",
-    color: "white",
-    padding: "12px",
-    borderRadius: 12,
-    cursor: "pointer",
-    fontWeight: "bold",
-  };
-
+  }
 
   if (loading || !finalUser) {
     return (
@@ -299,181 +109,217 @@ export default function ProfileLayout() {
     );
   }
 
-
   return (
     <div
+      className="min-h-screen flex justify-center items-start p-5 bg-cover bg-center bg-fixed text-white"
       style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        padding: 20,
-        backgroundImage: finalUser.fondoPerfil
+        backgroundImage: finalUser?.fondoPerfil?.trim()
           ? `url(${finalUser.fondoPerfil})`
-          : "none",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundAttachment: "fixed",
+          : undefined,
+        backgroundColor: "#111",
       }}
     >
-      <div style={container}>
+      {/* CARD PRINCIPAL */}
+      <div className="w-full max-w-[1100px] bg-[rgba(15,15,15,0.92)] rounded-[24px] p-[30px] flex flex-col gap-[15px]">
+
         {/* HEADER */}
-        <div style={header}>
+        <div className="flex flex-col md:flex-row items-center gap-[20px] bg-[#1f1f1f] p-[20px] rounded-[16px]">
+
+          {/* AVATAR */}
           <img
-            src={finalUser.fotoPerfil || "https://via.placeholder.com/150"}
-            style={avatar}
+            src={
+              finalUser?.fotoPerfil?.trim()
+                ? finalUser.fotoPerfil
+                : defaultAvatar
+            }
+            className="w-[120px] h-[120px] rounded-[18px] object-cover"
           />
 
-          <div style={{ flex: 1 }}>
-            <h1>{finalUser.usuario}</h1>
-            <p style={{ color: "#aaa" }}>{finalUser.descripcion}</p>
+          {/* INFO */}
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold">{finalUser.usuario}</h1>
+            <p className="text-[#aaa] mt-1">
+              {finalUser.descripcion || "Sin descripción"}
+            </p>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <button onClick={() => setEditing(!editing)} style={btn}>
+          {/* BOTONES */}
+          <div className="flex flex-col gap-[10px] w-full md:w-auto">
+            <button
+              onClick={() => setEditing(!editing)}
+              className="px-3 py-2 rounded-[10px]"
+              style={{ background: themeColor }}
+            >
               Editar
             </button>
-            <button onClick={handleLogout} style={btn}>
-              Cerrar sesion
+
+            <button
+              onClick={handleLogout}
+              className="bg-[#555] hover:bg-[#666] transition px-3 py-2 rounded-[10px]"
+            >
+              Cerrar sesión
             </button>
           </div>
         </div>
 
+        {/* EDIT SECTION */}
         {editing && (
-          <div style={card}>
-            <label style={labelStyle}>Avatar</label>
+          <div className="bg-[#1f1f1f] p-[15px] rounded-[14px] flex flex-col gap-3">
+
+            <label className="text-xs text-[#888]">Avatar</label>
             <input
-              style={editInput}
+              className="w-full p-2 rounded-[10px] bg-[#151515] border border-white/10"
               value={editData.fotoPerfil}
-              onChange={(e) =>
-                updateField("fotoPerfil", e.target.value)
-              }
+              onChange={(e) => updateField("fotoPerfil", e.target.value)}
             />
 
-            <label style={labelStyle}>Fondo</label>
+            <label className="text-xs text-[#888]">Fondo</label>
             <input
-              style={editInput}
+              className="w-full p-2 rounded-[10px] bg-[#151515] border border-white/10"
               value={editData.fondoPerfil}
-              onChange={(e) =>
-                updateField("fondoPerfil", e.target.value)
-              }
+              onChange={(e) => updateField("fondoPerfil", e.target.value)}
             />
 
-            <label style={labelStyle}>Bio</label>
+            <label className="text-xs text-[#888]">Bio</label>
             <textarea
-              style={textarea}
+              className="w-full min-h-[90px] p-2 rounded-[10px] bg-[#151515] border border-white/10"
               value={editData.descripcion}
+              onChange={(e) => updateField("descripcion", e.target.value)}
+            />
+            <label className="text-xs text-[#888]">Color principal</label>
+
+            <input
+              type="color"
+              value={editData.theme?.primary || "#8b5cf6"}
               onChange={(e) =>
-                updateField("descripcion", e.target.value)
+                setEditData({
+                  ...editData,
+                  theme: {
+                    ...editData.theme,
+                    primary: e.target.value,
+                  },
+                })
               }
             />
 
-            <label style={labelStyle}>Canciones</label>
-
-            {editData.canciones.map((song, i) => (
-              <div key={i} style={songRow}>
-                <span>♪</span>
-
-                <input
-                  style={songInput}
-                  value={song}
-                  onChange={(e) => {
-                    const copy = [...editData.canciones];
-                    copy[i] = e.target.value;
-                    updateField("canciones", copy);
-                  }}
-                />
-
-                <button
-                  style={deleteBtn}
-                  onClick={() => {
-                    const copy = editData.canciones.filter(
-                      (_, idx) => idx !== i
-                    );
-                    updateField("canciones", copy);
-                  }}
+            {/* CANCIONES */}
+            <div className="flex flex-col gap-2">
+              {editData.canciones.map((song, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 bg-[#141414] p-2 rounded-[10px]"
                 >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  <span>♪</span>
+
+                  <input
+                    className="flex-1 bg-transparent outline-none"
+                    value={song}
+                    onChange={(e) => {
+                      const copy = [...editData.canciones];
+                      copy[i] = e.target.value;
+                      updateField("canciones", copy);
+                    }}
+                  />
+
+                  <button
+                    className="text-[#999]"
+                    onClick={() =>
+                      updateField(
+                        "canciones",
+                        editData.canciones.filter((_, idx) => idx !== i)
+                      )
+                    }
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
 
             <button
-              style={addBtn}
+              className="bg-white/10 hover:bg-white/20 transition p-2 rounded-[12px]"
               onClick={() =>
-                updateField("canciones", [
-                  ...editData.canciones,
-                  "",
-                ])
+                updateField("canciones", [...editData.canciones, ""])
               }
             >
               + Agregar canción
             </button>
 
-            <button style={saveBtn} onClick={saveProfile}>
+            <button
+              className="p-3 rounded-[12px] font-bold"
+              style={{
+                background: themeColor,
+              }}
+              onClick={saveProfile}
+            >
               Guardar cambios
             </button>
           </div>
         )}
 
-        <div style={split}>
-          <div style={card}>
-            <h3>Descripción</h3>
+        {/* INFO BOXES */}
+        <div className="flex flex-col md:flex-row gap-[15px]">
+
+          <div className="flex-1 bg-[#1f1f1f] p-[15px] rounded-[14px] text-[#bdbdbd]">
+            <h3 className="text-white mb-2">Descripción</h3>
             <p>{finalUser.descripcion || "Sin descripción"}</p>
           </div>
 
-          <div style={card}>
-            <h3>Canciones</h3>
+          <div className="flex-1 bg-[#1f1f1f] p-[15px] rounded-[14px] text-[#bdbdbd]">
+            <h3 className="text-white mb-2">Canciones</h3>
 
-            {finalUser.canciones?.map((s: string, i: number) => (
-              <div key={i} style={{ display: "flex", gap: 10 }}>
-                <img src={songIcon} style={{ width: 16 }} />
-                {s}
-              </div>
-            ))}
+            <div className="flex flex-col gap-2">
+              {finalUser.canciones?.map((s: string, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span>♪</span>
+                  {s}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* POSTS */}
-        <div style={card}>
-          <h3>Posts</h3>
+        <div className="bg-[#1f1f1f] p-[15px] rounded-[14px]">
+          <h3 className="text-white mb-3">Posts</h3>
 
-          <div style={grid}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {posts.map((p) => (
               <div
                 key={p._id}
-                style={post}
                 onClick={() => navigate(`/post/${p._id}`)}
+                className="relative aspect-square rounded-[12px] overflow-hidden cursor-pointer group"
               >
+                {/* IMAGE */}
                 {p.images?.[0] && (
                   <img
                     src={p.images[0]}
-                    style={{
-                      width: "100%",
-                      height: "50%",
-                      objectFit: "cover",
-                    }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   />
                 )}
 
+                {/* GRADIENT OVERLAY ABAJO */}
                 <div
+                  className="absolute bottom-0 left-0 right-0 p-3"
                   style={{
-                    padding: 8,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    height: p.images?.[0] ? "50%" : "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
+                    background: `linear-gradient(
+                      to top,
+                      ${themeColor}dd,
+                      ${themeColor}55,
+                      transparent
+                    )`,
                   }}
                 >
-                  {p.descripcion}
+                  <p className="text-white text-sm line-clamp-3">
+                    {p.descripcion}
+                  </p>
                 </div>
+
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

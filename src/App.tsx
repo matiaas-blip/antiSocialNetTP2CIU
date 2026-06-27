@@ -1,29 +1,13 @@
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
-
-import Navbar from "./components/layout/Navbar";
 import AppRouter from "./routes/AppRouter";
-import  useAuth  from "./hooks/useAuth";
 
-function Layout() {
-  const { user } = useAuth();
-
-  return (
-    <>
-      {user && <Navbar />}
-      <AppRouter />
-    </>
-  );
-}
-
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Layout />
+        <AppRouter />
       </BrowserRouter>
     </AuthProvider>
   );
 }
-
-export default App;

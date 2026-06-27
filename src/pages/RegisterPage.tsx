@@ -10,12 +10,22 @@ export default function RegisterPage() {
   const [usuario, setUsuario] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!usuario || !email || !password) {
+      setError("Completa todos los campos");
+      return;
+    }
+
     try {
+      setLoading(true);
+      setError("");
+
       const user = await registerUser({
         usuario,
         email,
@@ -29,10 +39,7 @@ export default function RegisterPage() {
 
       if (!message) {
         setError("No se pudo registrar el usuario");
-        return;
-      }
-
-      if (message.includes("duplicate")) {
+      } else if (message.includes("duplicate")) {
         if (message.includes("usuario")) {
           setError("El nombre de usuario ya está en uso");
         } else if (message.includes("email")) {
@@ -40,106 +47,85 @@ export default function RegisterPage() {
         } else {
           setError("Usuario o email ya existe");
         }
-        return;
+      } else {
+        setError(message);
       }
-
-      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0f0f0f",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        color: "white",
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] text-white p-6">
+      
+      {/* GLOW BACKGROUND */}
+      <div className="absolute w-[400px] h-[400px] bg-purple-600/30 blur-3xl rounded-full" />
+
       <form
         onSubmit={handleSubmit}
-        style={{
-          width: 400,
-          background: "#1b1b1b",
-          padding: 30,
-          borderRadius: 24,
-          display: "flex",
-          flexDirection: "column",
-          gap: 15,
-        }}
+        className="relative w-full max-w-md bg-[#151515] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4"
       >
-        <h1>Registro</h1>
+        <h1 className="text-2xl font-bold text-center">
+          Crear cuenta
+        </h1>
 
+        <p className="text-sm text-gray-400 text-center">
+          Accedé al sistema de archivo social
+        </p>
+
+        {/* USER */}
         <input
-          type="text"
-          placeholder="Usuario"
           value={usuario}
           onChange={(e) => setUsuario(e.target.value)}
-          style={inputStyle}
+          placeholder="Usuario"
+          className="p-3 rounded-xl bg-[#0f0f0f] border border-white/10 focus:border-purple-500 outline-none"
         />
 
+        {/* EMAIL */}
         <input
           type="email"
-          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={inputStyle}
+          placeholder="Email"
+          className="p-3 rounded-xl bg-[#0f0f0f] border border-white/10 focus:border-purple-500 outline-none"
         />
 
+        {/* PASSWORD */}
         <input
           type="password"
-          placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
+          placeholder="Contraseña"
+          className="p-3 rounded-xl bg-[#0f0f0f] border border-white/10 focus:border-purple-500 outline-none"
         />
 
+        {/* ERROR */}
         {error && (
-          <div style={{ color: "#ff6b6b", fontSize: 14 }}>
-            {error}
+          <div className="text-red-400 text-sm">
+            ⚠ {error}
           </div>
         )}
 
+        {/* BUTTON */}
         <button
-          type="submit"
-          style={{
-            background: "#2a2a2a",
-            color: "white",
-            border: "none",
-            padding: 12,
-            borderRadius: 14,
-            cursor: "pointer",
-          }}
+          disabled={loading}
+          className="
+            w-full py-3 rounded-xl font-semibold
+            bg-gradient-to-r from-purple-500 to-blue-500
+            hover:opacity-90 active:scale-[0.98]
+            transition disabled:opacity-50
+          "
         >
-          Registrarse
+          {loading ? "Creando cuenta..." : "Registrar usuario"}
         </button>
 
         <Link
           to="/login"
-          style={{
-            textDecoration: "none",
-            textAlign: "center",
-            background: "#222",
-            color: "white",
-            padding: 12,
-            borderRadius: 14,
-            display: "block",
-          }}
+          className="text-center text-sm text-gray-400 hover:text-white transition"
         >
-          Iniciar sesión
+          Ya tengo cuenta → Iniciar sesión
         </Link>
       </form>
     </div>
   );
 }
-
-const inputStyle = {
-  background: "#222",
-  border: "none",
-  padding: "12px",
-  borderRadius: "12px",
-  color: "white",
-  outline: "none",
-};

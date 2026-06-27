@@ -7,84 +7,97 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+
+    if (!email || !password) {
+      setError("Completa todos los campos");
+      return;
+    }
 
     try {
+      setLoading(true);
+      setError("");
+
       const data = await loginUser(email, password);
 
       login(data);
-
       navigate("/");
     } catch (err: any) {
       setError(err?.response?.data?.error || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ color: "white", padding: 20 }}>
-      <h1>Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-[#0f0f0f] text-white p-6">
+      
+      {/* GLOW BACKGROUND */}
+      <div className="absolute w-[400px] h-[400px] bg-blue-600/30 blur-3xl rounded-full" />
 
       <form
         onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 10 }}
+        className="relative w-full max-w-md bg-[#151515] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col gap-4"
       >
+        <h1 className="text-2xl font-bold text-center">
+          Acceso al sistema
+        </h1>
+
+        <p className="text-sm text-gray-400 text-center">
+          Ingresá al archivo social restringido
+        </p>
+
+        {/* EMAIL */}
         <input
-          placeholder="Email"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{
-            padding: 10,
-            background: "#111",
-            color: "white",
-            border: "1px solid #333",
-            borderRadius: 6,
-          }}
+          placeholder="Email"
+          className="p-3 rounded-xl bg-[#0f0f0f] border border-white/10 focus:border-blue-500 outline-none"
         />
 
+        {/* PASSWORD */}
         <input
           type="password"
-          placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{
-            padding: 10,
-            background: "#111",
-            color: "white",
-            border: "1px solid #333",
-            borderRadius: 6,
-          }}
+          placeholder="Contraseña"
+          className="p-3 rounded-xl bg-[#0f0f0f] border border-white/10 focus:border-blue-500 outline-none"
         />
 
+        {/* ERROR */}
+        {error && (
+          <div className="text-red-400 text-sm">
+            ⚠ {error}
+          </div>
+        )}
+
+        {/* BUTTON */}
         <button
-          type="submit"
-          style={{
-            padding: 10,
-            background: "#333",
-            color: "white",
-            border: "1px solid #444",
-            borderRadius: 6,
-            cursor: "pointer",
-          }}
+          disabled={loading}
+          className="
+            w-full py-3 rounded-xl font-semibold
+            bg-gradient-to-r from-blue-500 to-purple-500
+            hover:opacity-90 active:scale-[0.98]
+            transition disabled:opacity-50
+          "
         >
-          Ingresar
+          {loading ? "Ingresando..." : "Ingresar"}
         </button>
+
+        <Link
+          to="/register"
+          className="text-center text-sm text-gray-400 hover:text-white transition"
+        >
+          ¿No tenés cuenta? Crear acceso →
+        </Link>
       </form>
-
-      {error && (
-        <p style={{ color: "red", marginTop: 10 }}>
-          {error}
-        </p>
-      )}
-
-      <p style={{ marginTop: 10 }}>
-        ¿No tenés cuenta? <Link to="/register">Crear cuenta</Link>
-      </p>
     </div>
   );
 }

@@ -1,60 +1,53 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../api/axios";
-import puntosIcon from "../assets/icons/puntos.svg";
+import Sidebar from "../components/layout/Sidebar";
 import useAuth from "../hooks/useAuth";
 
 export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const [post, setPost] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
-  const [openMenu, setOpenMenu] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(true);
 
-
+  // 📌 POST
   useEffect(() => {
     const fetchPost = async () => {
       try {
+        setLoading(true);
         const res = await api.get(`/posts/${id}`);
         setPost(res.data);
       } catch (err) {
-        console.error("Error cargando post:", err);
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchPost();
+    if (id) fetchPost();
   }, [id]);
 
-
+  // 📌 COMMENTS
   useEffect(() => {
     const fetchComments = async () => {
       try {
         const res = await api.get(`/comments/post/${id}`);
         setComments(res.data);
       } catch (err) {
-        console.error("Error cargando comentarios:", err);
+        console.error(err);
       }
     };
 
     if (id) fetchComments();
   }, [id]);
 
-
-  const deletePost = async () => {
-    try {
-      await api.delete(`/posts/${id}`);
-      navigate("/");
-    } catch (err) {
-      console.error("Error eliminando post:", err);
-    }
-  };
-
-
+  // 📌 ADD COMMENT
   const handleComment = async () => {
-    if (!commentText?.trim()) return;
+    if (!commentText.trim()) return;
 
     try {
       await api.post("/comments", {
@@ -67,94 +60,129 @@ export default function PostDetailPage() {
 
       const res = await api.get(`/comments/post/${id}`);
       setComments(res.data);
-
     } catch (err) {
-      console.error("Error al comentar:", err);
+      console.error(err);
     }
   };
 
-  if (!post) return <div style={{ color: "white" }}>Cargando...</div>;
+  // 📌 DELETE COMMENT
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await api.delete(`/comments/${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setComments((prev) =>
+        prev.filter((c) => c._id !== commentId)
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (loading || !post) {
+    return (
+      <div className="flex justify-center items-center h-screen text-white">
+        Cargando...
+      </div>
+    );
+  }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
+    <div className="flex justify-center p-4 sm:p-10 text-white">
 
+      <div className="w-full max-w-2xl bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
 
-        <div style={styles.menu}>
-          <img
-            src={puntosIcon}
-            onClick={() => setOpenMenu(!openMenu)}
-            style={styles.menuIcon}
-          />
-
-          {openMenu && (
-            <div style={styles.dropdown}>
-              <button onClick={deletePost} style={styles.deleteBtn}>
-                🗑 Eliminar post
-              </button>
-            </div>
-          )}
-        </div>
-
-
+        {/* IMAGE */}
         {post.images?.[0] && (
-          <img src={post.images[0]} style={styles.image} />
+          <img
+            src={post.images[0]}
+            className="w-full max-h-[420px] object-cover"
+          />
         )}
 
-        <div style={styles.content}>
-          <h2 style={styles.title}>{post.descripcion}</h2>
+        {/* CONTENT */}
+        <div className="p-4 flex flex-col gap-3">
 
-          <p style={styles.author}>
+          <h2 className="text-xl font-semibold">
+            {post.descripcion}
+          </h2>
+
+          <p className="text-white/60 text-sm">
             Publicado por: {post.usuario?.usuario}
           </p>
 
-          {post.tags?.length > 0 && (
-            <div style={styles.tags}>
-              {post.tags.map((t: any, i: number) => (
-                <span key={i} style={styles.tag}>
-                  #{t.name || t}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* COMMENTS */}
+          <div className="mt-4 border-t border-white/10 pt-3">
 
-
-          <div style={styles.commentsWrapper}>
-
-            <div style={styles.commentsTitle}>
+            <h3 className="text-sm font-bold mb-3">
               Comentarios
+            </h3>
+
+            <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
+
+              {comments.map((c: any) => {
+                const isMine = c.usuario?._id === user?._id;
+
+                return (
+                  <div
+                    key={c._id}
+                    className="flex justify-between items-start text-sm border-b border-white/10 pb-2"
+                  >
+
+                    {/* TEXTO */}
+                    <div>
+                      <strong>
+                        {c.usuario?.usuario || "anon"}
+                      </strong>{" "}
+                      <span>{c.texto}</span>
+                    </div>
+
+                    {/* ACCIONES */}
+                    {isMine && (
+                      <div className="flex items-center gap-2 ml-3">
+
+                        {/* 3 PUNTOS VISUAL */}
+                        <span className="text-white/40 select-none">
+                          ⋯
+                        </span>
+
+                        {/* DELETE */}
+                        <button
+                          onClick={() =>
+                            handleDeleteComment(c._id)
+                          }
+                          className="text-red-500 text-xs hover:text-red-400"
+                        >
+                          Eliminar
+                        </button>
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+
             </div>
 
-            <div style={styles.commentsList}>
-              {(comments || []).map((c: any) => (
-                <div key={c._id} style={styles.comment}>
-                  <strong>
-                    {c.usuario?.usuario || c.usuario || "anon"}
-                  </strong>{" "}
-                  <span>{c.texto}</span>
-                </div>
-              ))}
-            </div>
-
-
-            <div style={styles.commentInputBox}>
-              <button
-                onClick={() => navigate(-1)}
-                style={styles.backBtn}
-              >
-                Volver
-              </button>
+            {/* INPUT */}
+            <div className="flex gap-2 mt-4">
 
               <input
                 value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
+                onChange={(e) =>
+                  setCommentText(e.target.value)
+                }
                 placeholder="Escribe un comentario..."
-                style={styles.input}
+                className="flex-1 px-3 py-2 rounded-full bg-black/40 border border-white/10 outline-none"
               />
 
               <button
                 onClick={handleComment}
-                style={styles.btn}
+                className="px-3 py-2 bg-blue-500 rounded-full text-sm"
               >
                 Comentar
               </button>
@@ -162,175 +190,10 @@ export default function PostDetailPage() {
             </div>
 
           </div>
+
         </div>
 
       </div>
     </div>
   );
 }
-
-
-const styles: any = {
-  page: {
-    minHeight: "100vh",
-    background: "#0f0f0f",
-    display: "flex",
-    justifyContent: "center",
-    padding: 20,
-    color: "white",
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: 750,
-    background: "#1a1a1a",
-    borderRadius: 14,
-    overflow: "hidden",
-    position: "relative",
-    border: "1px solid #2a2a2a",
-  },
-
-  menu: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-  },
-
-  menuIcon: {
-    width: 22,
-    height: 22,
-    cursor: "pointer",
-    opacity: 0.8,
-  },
-
-  dropdown: {
-    position: "absolute",
-    right: 0,
-    top: 28,
-    background: "#2a2a2a",
-    borderRadius: 10,
-    padding: 8,
-    minWidth: 140,
-  },
-
-  deleteBtn: {
-    width: "100%",
-    background: "transparent",
-    border: "none",
-    color: "#ff4d4d",
-    padding: 8,
-    cursor: "pointer",
-    textAlign: "left",
-  },
-
-  image: {
-    width: "100%",
-    maxHeight: 420,
-    objectFit: "cover",
-  },
-
-  content: {
-    padding: 18,
-    display: "flex",
-    flexDirection: "column",
-  },
-
-  title: {
-    fontSize: 22,
-    marginBottom: 8,
-  },
-
-  author: {
-    color: "#aaa",
-    marginBottom: 10,
-  },
-
-  tags: {
-    display: "flex",
-    gap: 6,
-    marginBottom: 12,
-    flexWrap: "wrap",
-  },
-
-  tag: {
-    fontSize: 12,
-    padding: "3px 8px",
-    borderRadius: 10,
-    background: "#2a2a2a",
-    color: "#ccc",
-  },
-
-  /* COMMENTS FULL HEIGHT */
-  commentsWrapper: {
-    marginTop: 15,
-    borderTop: "1px solid #2a2a2a",
-    display: "flex",
-    flexDirection: "column",
-    flex: 1,
-    minHeight: 300,
-  },
-
-  commentsTitle: {
-    fontWeight: "bold",
-    fontSize: 14,
-    padding: "10px 0",
-    borderBottom: "1px solid #2a2a2a",
-  },
-
-  commentsList: {
-    flex: 1,
-    overflowY: "auto",
-    padding: "10px 0",
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-
-    scrollbarWidth: "thin",
-    scrollbarColor: "#444 transparent",
-  },
-
-  comment: {
-    fontSize: 13,
-    padding: 6,
-    borderBottom: "1px solid #2a2a2a",
-  },
-
-  commentInputBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    paddingTop: 10,
-    borderTop: "1px solid #2a2a2a",
-  },
-
-  input: {
-    flex: 1,
-    padding: "8px 10px",
-    borderRadius: 20,
-    border: "1px solid #333",
-    background: "#111",
-    color: "white",
-    outline: "none",
-    minWidth: 0,
-  },
-
-  btn: {
-    padding: "8px 12px",
-    background: "#3897f0",
-    border: "none",
-    color: "white",
-    cursor: "pointer",
-    borderRadius: 20,
-    whiteSpace: "nowrap",
-  },
-
-  backBtn: {
-    padding: "8px 12px",
-    background: "#444",
-    border: "none",
-    color: "white",
-    borderRadius: 20,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  },
-};
