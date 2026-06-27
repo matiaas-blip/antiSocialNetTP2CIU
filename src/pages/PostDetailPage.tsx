@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../api/axios";
-import Sidebar from "../components/layout/Sidebar";
 import useAuth from "../hooks/useAuth";
 
 export default function PostDetailPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user, token } = useAuth();
 
   const [post, setPost] = useState<any>(null);
@@ -31,7 +29,6 @@ export default function PostDetailPage() {
     if (id) fetchPost();
   }, [id]);
 
-  // 📌 COMMENTS
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -45,7 +42,6 @@ export default function PostDetailPage() {
     if (id) fetchComments();
   }, [id]);
 
-  // 📌 ADD COMMENT
   const handleComment = async () => {
     if (!commentText.trim()) return;
 
@@ -65,7 +61,6 @@ export default function PostDetailPage() {
     }
   };
 
-  // 📌 DELETE COMMENT
   const handleDeleteComment = async (commentId: string) => {
     try {
       await api.delete(`/comments/${commentId}`, {
@@ -95,7 +90,6 @@ export default function PostDetailPage() {
 
       <div className="w-full max-w-2xl bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
 
-        {/* IMAGE */}
         {post.images?.[0] && (
           <img
             src={post.images[0]}
@@ -103,7 +97,6 @@ export default function PostDetailPage() {
           />
         )}
 
-        {/* CONTENT */}
         <div className="p-4 flex flex-col gap-3">
 
           <h2 className="text-xl font-semibold">
@@ -114,7 +107,6 @@ export default function PostDetailPage() {
             Publicado por: {post.usuario?.usuario}
           </p>
 
-          {/* COMMENTS */}
           <div className="mt-4 border-t border-white/10 pt-3">
 
             <h3 className="text-sm font-bold mb-3">
@@ -132,7 +124,6 @@ export default function PostDetailPage() {
                     className="flex justify-between items-start text-sm border-b border-white/10 pb-2"
                   >
 
-                    {/* TEXTO */}
                     <div>
                       <strong>
                         {c.usuario?.usuario || "anon"}
@@ -140,16 +131,14 @@ export default function PostDetailPage() {
                       <span>{c.texto}</span>
                     </div>
 
-                    {/* ACCIONES */}
                     {isMine && (
                       <div className="flex items-center gap-2 ml-3">
 
-                        {/* 3 PUNTOS VISUAL */}
+
                         <span className="text-white/40 select-none">
                           ⋯
                         </span>
 
-                        {/* DELETE */}
                         <button
                           onClick={() =>
                             handleDeleteComment(c._id)
@@ -168,7 +157,6 @@ export default function PostDetailPage() {
 
             </div>
 
-            {/* INPUT */}
             <div className="flex gap-2 mt-4">
 
               <input
